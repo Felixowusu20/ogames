@@ -4,9 +4,9 @@
   "description": "scramble game developed by Ogames by Felix owusu",
   "main": "Server.js",
   "scripts": {
-  "start": "node Server.js",
-  "dev": "nodemon Server.js"
-},
+    "start": "node Server.js",
+    "dev": "nodemon Server.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
