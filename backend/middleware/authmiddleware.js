@@ -1,14 +1,28 @@
 const jwt = require('jsonwebtoken');
 
+/**
+ * Authentication Middleware
+ * Verifies JWT tokens and attaches user info to the request object.
+ */
 module.exports = function (req, res, next) {
-  const token = req.header('Authorization');
-  if (!token) return res.status(401).json({ message: 'Access denied' });
+  const authHeader = req.header('Authorization');
+
+  if (!authHeader) {
+    return res.status(401).json({ message: 'Access denied. No token provided.' });
+  }
+
+  // Expecting format: "Bearer <token>"
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied. Invalid token format.' });
+  }
 
   try {
-    const verified = jwt.verify(token.split(" ")[1], process.env.JWT_SECRET);
-    req.user = verified;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+    req.user = decoded;
     next();
   } catch (err) {
-    res.status(400).json({ message: 'Invalid token' });
+    console.error("JWT verification failed:", err.message);
+    return res.status(403).json({ message: 'Invalid or expired token.' });
   }
 };
