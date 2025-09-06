@@ -1,29 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  TextField, Button, Typography, Box, Paper, List, ListItem, Divider, Stack
+  TextField, Button, Typography, Box, Paper, List, ListItem, Divider, Stack, MenuItem, Select, InputLabel, FormControl
 } from '@mui/material';
 
 const Dashboard = () => {
   const [text, setText] = useState('');
   const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState([]);
   const [words, setWords] = useState([]);
 
+  // Fetch categories
+  const fetchCategories = async () => {
+    const res = await axios.get('http://localhost:5000/api/categories');
+    setCategories(res.data);
+  };
+
+  // Fetch words
   const fetchWords = async () => {
     const res = await axios.get('http://localhost:5000/api/words');
     setWords(res.data);
   };
 
   useEffect(() => {
+    fetchCategories();
     fetchWords();
   }, []);
 
+  // Add word
   const handleAdd = async () => {
     if (text && category) {
-      await axios.post('http://localhost:5000/api/words', { text, category });
-      setText('');
-      setCategory('');
-      fetchWords();
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+          'http://localhost:5000/api/words',
+          { text, category },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setText('');
+        setCategory('');
+        fetchWords();
+      } catch (err) {
+        console.error('Error adding word:', err.response?.data || err.message);
+      }
     }
   };
 
@@ -34,6 +53,7 @@ const Dashboard = () => {
       </Typography>
 
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={4}>
+        {/* Add Word Form */}
         <Paper elevation={3} sx={{ p: 3, flex: 1 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Add New Word</Typography>
           <TextField
@@ -43,13 +63,14 @@ const Dashboard = () => {
             onChange={e => setText(e.target.value)}
             sx={{ mb: 2 }}
           />
-          <TextField
-            label="Category"
-            fullWidth
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            sx={{ mb: 2 }}
-          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Category</InputLabel>
+            <Select value={category} onChange={e => setCategory(e.target.value)}>
+              {categories.map((cat, idx) => (
+                <MenuItem key={idx} value={cat}>{cat}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <Button
             variant="contained"
             fullWidth
@@ -60,6 +81,7 @@ const Dashboard = () => {
           </Button>
         </Paper>
 
+        {/* Word List */}
         <Paper elevation={3} sx={{ p: 3, flex: 2, maxHeight: '500px', overflow: 'auto' }}>
           <Typography variant="h6" sx={{ mb: 2 }}>All Words</Typography>
           <List>
@@ -69,7 +91,7 @@ const Dashboard = () => {
                   <Box>
                     <Typography>{idx + 1}. {word.text}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Category: <strong>{word.category || 'Uncategorized'}</strong>
+                      Category: <strong>{word.category}</strong>
                     </Typography>
                   </Box>
                 </ListItem>
